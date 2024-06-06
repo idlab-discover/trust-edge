@@ -1,0 +1,68 @@
+/cloudinit_script_encrypted.txt
+
+# For Python virtual environments
+.venv
+
+# Created automatically by a popular IDE
+.vscode
+
+# Suggested by a popular IDE when it tells me I should save my workspace
+workspace.code-workspace
+
+# Backup files
+*.~
+*~
+
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+
+# C extensions
+*.so
+
+# Distribution / packaging
+bin/
+build/
+develop-eggs/
+dist/
+eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+AUTHORS
+ChangeLog
+/config/
+
+# Installer logs
+pip-log.txt
+pip-delete-this-directory.txt
+
+# Unit test / coverage reports
+.tox/
+.coverage
+.cache
+nosetests.xml
+coverage.xml
+
+# Translations
+*.mo
+
+# Sphinx documentation
+docs/_build/
+
+# Keylime specifics
+scripts/NVChip
+test/.auditing-*
+test/NVChip
+NVChip
+test/testdata.sqlite
+cv_data.sqlite
+reg_data.sqlite
+tpmdata.yml
+encrypted_payload

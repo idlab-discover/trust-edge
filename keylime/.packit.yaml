@@ -1,0 +1,8 @@
+jobs:
+- job: tests
+  trigger: pull_request
+  metadata:
+    targets:
+    - fedora-branched
+    - centos-stream-9-x86_64
+    skip_build: true

@@ -1,0 +1,40 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "registrar.fullname" . }}
+  labels:
+    {{- include "registrar.labels" . | nindent 4 }}
+spec:
+  type: {{ include "registrar.serviceType" . }}
+  {{- if and (eq (include "registrar.serviceType" .) "LoadBalancer") (not (empty (include "registrar.loadBalancerIP" . ))) }}
+  loadBalancerIP: {{ include "registrar.loadBalancerIP" . }}
+  {{- end }}
+  ports:
+    - port: {{ .Values.service.nontlsPort }}
+      targetPort: {{ .Values.service.nontlsPort }}
+      protocol: TCP
+      name: registrar
+    - port: {{ .Values.service.tlsPort }}
+      targetPort: {{ .Values.service.tlsPort }}
+      protocol: TCP
+      name: registrar-tls
+  selector:
+    {{- include "registrar.selectorLabels" . | nindent 4 }}
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "registrar.fullname" . }}-nodeport
+  labels:
+    {{- include "registrar.labels" . | nindent 4 }}
+spec:
+  type: NodePort
+  ports:
+    - port: 8891
+      targetPort: {{ .Values.service.nontlsPort }}
+      protocol: TCP
+      name: registrar-nodeport
+      nodePort: 30001
+  selector:
+    {{- include "registrar.selectorLabels" . | nindent 4 }}

@@ -1,0 +1,186 @@
+
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: gitlabtoken
+  namespace: system
+data:
+  .dockerconfigjson: ewoJImF1dGhzIjogewoJCSJnaXRsYWIuaWxhYnQuaW1lYy5iZTo0NTY3L2VkZ2Uta2V5bGltZS9hdHRlc3RhdGlvbi1vcGVyYXRvciI6IHsKCQkJImF1dGgiOiAiYW5Sb2FXcHpiV0U2VVVjeWMySmFabWRoWVVWcFExWjZabHB0T0ZNPSIKCQl9Cgl9Cn0=
+type: kubernetes.io/dockerconfigjson
+
+---
+
+apiVersion: v1
+kind: Namespace
+metadata:
+  labels:
+    control-plane: controller-manager
+    app.kubernetes.io/name: namespace
+    app.kubernetes.io/instance: system
+    app.kubernetes.io/component: manager
+    app.kubernetes.io/created-by: attestation-operator
+    app.kubernetes.io/part-of: attestation-operator
+    app.kubernetes.io/managed-by: kustomize
+  name: system
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: controller-manager
+  namespace: system
+  labels:
+    control-plane: controller-manager
+    app.kubernetes.io/name: deployment
+    app.kubernetes.io/instance: controller-manager
+    app.kubernetes.io/component: manager
+    app.kubernetes.io/created-by: attestation-operator
+    app.kubernetes.io/part-of: attestation-operator
+    app.kubernetes.io/managed-by: kustomize
+spec:
+  selector:
+    matchLabels:
+      control-plane: controller-manager
+  replicas: 1
+  template:
+    metadata:
+      annotations:
+        kubectl.kubernetes.io/default-container: manager
+      labels:
+        control-plane: controller-manager
+    spec:
+      # TODO(user): Uncomment the following code to configure the nodeAffinity expression
+      # according to the platforms which are supported by your solution.
+      # It is considered best practice to support multiple architectures. You can
+      # build your manager image using the makefile target docker-buildx.
+      # affinity:
+      #   nodeAffinity:
+      #     requiredDuringSchedulingIgnoredDuringExecution:
+      #       nodeSelectorTerms:
+      #         - matchExpressions:
+      #           - key: kubernetes.io/arch
+      #             operator: In
+      #             values:
+      #               - amd64
+      #               - arm64
+      #               - ppc64le
+      #               - s390x
+      #           - key: kubernetes.io/os
+      #             operator: In
+      #             values:
+      #               - linux
+      securityContext:
+        runAsNonRoot: false
+        # TODO(user): For common cases that do not require escalating privileges
+        # it is recommended to ensure that all your Pods/Containers are restrictive.
+        # More info: https://kubernetes.io/docs/concepts/security/pod-security-standards/#restricted
+        # Please uncomment the following code if your project does NOT have to work on old Kubernetes
+        # versions < 1.19 or on vendors versions which do NOT support this field by default (i.e. Openshift < 4.11 ).
+        # seccompProfile:
+        #   type: RuntimeDefault
+      volumes:
+        - name: certs
+          emptyDir:
+            sizeLimit: 500Mi
+        - name: tmp
+          emptyDir:
+            sizeLimit: 500Mi
+      #this initcontainer is a workaround. In production you would provide a proper key and cert to the controller signed by your CA
+      initContainers:
+      - name: cert-init
+        image: quay.io/keylime/keylime_tenant:latest
+        volumeMounts:
+          - mountPath: /var/lib/controller/certs/
+            name: certs
+            readOnly: false
+          - mountPath: /tmp/
+            name: tmp
+            readOnly: false
+        command: 
+          - /bin/bash
+          - -c
+          - |
+            KUBECTL_PREFIX=""
+            command -v kubectl
+            if [[ $? -ne 0 ]]
+            then
+                pushd /tmp
+                curl -LO https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl
+                chmod +x /tmp/kubectl
+                KUBECTL_PREFIX="/tmp/"
+                popd
+            fi
+
+            ls -l /var/lib/controller/
+
+            # now generate the CV CA
+            openssl req -nodes -newkey rsa:2048 -keyout /var/lib/controller/certs/csr.key -out csr.csr -subj "/O=discover.idlab"
+
+            ls -l /var/lib/controller/certs/
+
+            ${KUBECTL_PREFIX}kubectl create -f - <<EOF
+            apiVersion: certificates.k8s.io/v1
+            kind: CertificateSigningRequest
+            metadata:
+              name: controller-tls-csr
+            spec:
+              request: $(cat csr.csr | base64 | tr -d '\n')
+              signerName: kubernetes.io/kube-apiserver-client
+              usages:
+              - digital signature
+              - key encipherment
+              - client auth
+            EOF
+
+            rm csr.csr
+            ${KUBECTL_PREFIX}kubectl certificate approve controller-tls-csr
+
+            ${KUBECTL_PREFIX}kubectl get csr controller-tls-csr -o jsonpath='{.status.certificate}' | base64 --decode > /var/lib/controller/certs/csr.crt
+
+            ${KUBECTL_PREFIX}kubectl delete csr controller-tls-csr
+
+            chmod -R 0777 /var/lib/controller/certs/ 
+
+            exit 0  
+      containers:
+      - command:
+        - /manager
+        args:
+        - --leader-elect
+        image: controller:latest
+        volumeMounts:
+          - mountPath: /var/lib/controller/certs/
+            name: certs
+            readOnly: true
+        name: manager
+        securityContext:
+          allowPrivilegeEscalation: false
+          capabilities:
+            drop:
+            - "ALL"
+        livenessProbe:
+          httpGet:
+            path: /healthz
+            port: 8081
+          initialDelaySeconds: 15
+          periodSeconds: 20
+        readinessProbe:
+          httpGet:
+            path: /readyz
+            port: 8081
+          initialDelaySeconds: 5
+          periodSeconds: 10
+        # TODO(user): Configure the resources accordingly based on the project requirements.
+        # More info: https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/
+        resources:
+          limits:
+            cpu: 500m
+            memory: 128Mi
+          requests:
+            cpu: 10m
+            memory: 64Mi
+      imagePullSecrets:
+        - name: gitlabtoken
+      serviceAccountName: controller-manager
+      terminationGracePeriodSeconds: 10
+---

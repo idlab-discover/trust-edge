@@ -1,0 +1,4 @@
+## Append samples of your project ##
+resources:
+- edgenode_v1alpha1_edgenode.yaml
+#+kubebuilder:scaffold:manifestskustomizesamples

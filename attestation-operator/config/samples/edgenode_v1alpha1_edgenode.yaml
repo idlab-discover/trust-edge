@@ -1,0 +1,12 @@
+apiVersion: edgenode.attest.idlab.be/v1alpha1
+kind: EdgeNode
+metadata:
+  labels:
+    app.kubernetes.io/name: edgenode
+    app.kubernetes.io/instance: edgenode-sample
+    app.kubernetes.io/part-of: attestation-operator
+    app.kubernetes.io/managed-by: kustomize
+    app.kubernetes.io/created-by: attestation-operator
+  name: edgenode-sample
+spec:
+  # TODO(user): Add fields here

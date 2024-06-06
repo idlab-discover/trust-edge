@@ -1,0 +1,24 @@
+{{ if .Values.global.openshift }}
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: {{ include "verifier.roleName" . }}
+rules:
+- apiGroups:
+  - security.openshift.io
+  resources:
+  - securitycontextconstraints
+  resourceNames:
+  - anyuid
+  verbs:
+  - use
+{{ end }}
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: edgenode-status-updater
+rules:
+- apiGroups: ["edgenode.attest.idlab.be"]
+  resources: ["edgenodes","edgenodes/status"]
+  verbs: ["patch"]

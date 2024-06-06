@@ -1,0 +1,7 @@
+nodeUUID: d432fbb3-d2f1-4a97-9ef7-75bd81c00000
+
+api:
+  group: edgenode.attest.idlab.be
+  version: v1alpha1
+
+keylimeNamespace: keylime

@@ -1,0 +1,78 @@
+---
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  annotations:
+    controller-gen.kubebuilder.io/version: v0.14.0
+  name: edgenodes.edgenode.attest.idlab.be
+spec:
+  group: edgenode.attest.idlab.be
+  names:
+    kind: EdgeNode
+    listKind: EdgeNodeList
+    plural: edgenodes
+    singular: edgenode
+  scope: Namespaced
+  versions:
+  - name: v1alpha1
+    schema:
+      openAPIV3Schema:
+        description: EdgeNode is the Schema for the edgenodes API
+        properties:
+          apiVersion:
+            description: |-
+              APIVersion defines the versioned schema of this representation of an object.
+              Servers should convert recognized schemas to the latest internal value, and
+              may reject unrecognized values.
+              More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources
+            type: string
+          kind:
+            description: |-
+              Kind is a string value representing the REST resource this object represents.
+              Servers may infer this from the endpoint the client submits requests to.
+              Cannot be updated.
+              In CamelCase.
+              More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds
+            type: string
+          metadata:
+            type: object
+          spec:
+            description: EdgeNodeSpec defines the desired state of EdgeNode
+            properties:
+              aik_tpm:
+                type: string
+              ek_tpm:
+                type: string
+              ekcert:
+                type: string
+              ipv4:
+                type: string
+              mbrefstate:
+                type: string
+              mtls_cert:
+                type: string
+              nodeStatus:
+                type: string
+              nodeport:
+                type: integer
+              uuid:
+                type: string
+            required:
+            - aik_tpm
+            - ek_tpm
+            - ekcert
+            - ipv4
+            - mbrefstate
+            - mtls_cert
+            - nodeStatus
+            - nodeport
+            - uuid
+            type: object
+          status:
+            description: EdgeNodeStatus defines the observed state of EdgeNode
+            type: object
+        type: object
+    served: true
+    storage: true
+    subresources:
+      status: {}
